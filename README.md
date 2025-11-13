@@ -22,6 +22,7 @@ Optimiza imágenes PNG reduciendo su tamaño mediante cuantización de colores.
 - Reduce la paleta de colores a 256 colores (configurable)
 - Mantiene la transparencia y optimiza la compresión
 - Guarda las imágenes optimizadas en una carpeta separada
+- Omite imágenes que ya existen en el destino para evitar reprocesamiento
 
 ### 3. `recortar-videos.py`
 Recorta y comprime videos para reducir su tamaño y duración.
@@ -32,6 +33,7 @@ Recorta y comprime videos para reducir su tamaño y duración.
 - Convierte audio a AAC 128k
 - Máxima compatibilidad con formato YUV420P
 - Requiere FFmpeg instalado
+- Omite videos que ya existen en el destino para evitar reprocesamiento
 
 ### 4. `remove-roms.py`
 Elimina ROMs que no tienen imágenes de captura de pantalla correspondientes.

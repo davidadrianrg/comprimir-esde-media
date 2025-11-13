@@ -74,13 +74,19 @@ def procesar_imagenes():
         relative_path = image_path.relative_to(BASE_DIR)
         output_path = OUTPUT_DIR / relative_path
 
-        # 5. Crear el directorio de salida si no existe
+        # 5. Verificar si el archivo ya existe
+        if output_path.is_file():
+            print(f"\n[{i+1}/{len(all_image_files)}] Omitiendo: {image_path.name}")
+            print(f"  -> Ya existe en: {output_path}")
+            continue
+
+        # 6. Crear el directorio de salida si no existe
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         print(f"\n[{i+1}/{len(all_image_files)}] Procesando: {image_path.name}")
         print(f"  -> Guardando en: {output_path}")
 
-        # 6. Ejecutar la optimización (cuantización)
+        # 7. Ejecutar la optimización (cuantización)
         try:
             with Image.open(image_path) as img:
                 # Aseguramos que trabajamos con RGBA (para manejar la transparencia)
