@@ -80,16 +80,21 @@ def procesar_videos():
         relative_path = video_path.relative_to(BASE_DIR)
         output_path = OUTPUT_DIR / relative_path
 
-        # 5. Crear el directorio de salida si no existe
+        # 5. Verificar si el archivo ya existe
+        if output_path.is_file():
+            print(f"\n[{i+1}/{len(video_files)}] Omitiendo: {video_path.name}")
+            print(f"  -> Ya existe en: {output_path}")
+            continue
+
+        # 6. Crear el directorio de salida si no existe
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         print(f"\n[{i+1}/{len(video_files)}] Procesando: {video_path.name}")
         print(f"  -> Guardando en: {output_path}")
 
-        # 6. Construir el comando de FFmpeg
+        # 7. Construir el comando de FFmpeg
         command = [
             'ffmpeg',
-            '-y',                      # Sobrescribir archivo de salida si ya existe
             '-i', str(video_path),     # Archivo de entrada
             '-t', DURACION_SEGUNDOS,   # Duración (trim)
             '-c:v', 'libx264',         # Códec de video (H.264, muy compatible)
@@ -101,7 +106,7 @@ def procesar_videos():
             str(output_path)           # Archivo de salida
         ]
 
-        # 7. Ejecutar el comando
+        # 8. Ejecutar el comando
         try:
             # capture_output=True esconde la salida de ffmpeg a menos que haya un error
             subprocess.run(
