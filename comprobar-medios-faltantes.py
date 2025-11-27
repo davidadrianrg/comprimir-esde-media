@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
+import xml.etree.ElementTree as ET
 
 try:
     import pandas as pd
@@ -22,6 +23,9 @@ ROMS_BASE_DIR = Path('E:\\Documentos\\RetroGaming\\roms')
 
 # 2. Ruta a la carpeta 'media' principal (donde están los medios)
 MEDIA_BASE_DIR = Path('E:\\Documentos\\RetroGaming\\ES-DE\\ES-DE\\downloaded_media')
+
+# 3. Ruta a la carpeta de gamelists
+GAMELISTS_BASE_DIR = Path('E:\\Documentos\\RetroGaming\\ES-DE\\ES-DE\\gamelists')
 
 # 3. Lista de carpetas de imágenes a verificar
 TARGET_FOLDERS = [
@@ -103,6 +107,47 @@ OUTPUT_EXCEL = 'reporte_medios_faltantes.xlsx'
 # --- FIN DE LA CONFIGURACIÓN ---
 
 
+def cargar_gamelist(emulador_name: str) -> dict:
+    """
+    Carga el gamelist.xml de un emulador y retorna un diccionario
+    con nombre_archivo -> nombre_juego.
+    """
+    gamelist_path = GAMELISTS_BASE_DIR / f'{emulador_name}' / 'gamelist.xml'
+    
+    if not gamelist_path.exists():
+        print(f"   📋 No se encontró gamelist.xml para {emulador_name}")
+        return {}
+    
+    try:
+        tree = ET.parse(gamelist_path)
+        root = tree.getroot()
+        
+        gamelist_dict = {}
+        for game in root.findall('game'):
+            path_elem = game.find('path')
+            name_elem = game.find('name')
+            
+            if path_elem is not None and name_elem is not None:
+                # Extraer el nombre del archivo del path (ej: ./sf2hf.7z -> sf2hf.7z)
+                path_text = path_elem.text
+                if path_text.startswith('./'):
+                    filename = path_text[2:]  # Quitar './'
+                else:
+                    filename = path_text
+                
+                # Obtener el nombre base sin extensión para comparación
+                base_name = Path(filename).stem
+                gamelist_dict[base_name] = name_elem.text
+                gamelist_dict[filename] = name_elem.text  # También guardar con extensión
+        
+        print(f"   📋 Cargados {len(gamelist_dict)} juegos desde gamelist.xml")
+        return gamelist_dict
+        
+    except Exception as e:
+        print(f"   ❌ Error al cargar gamelist.xml para {emulador_name}: {e}")
+        return {}
+
+
 def obtener_lista_roms(emulador_dir: Path) -> list:
     """
     Obtiene una lista de todas las ROMs en un directorio de emulador.
@@ -168,7 +213,7 @@ def generar_reporte_excel(datos_reporte: dict, filename: str):
                 df = pd.DataFrame(datos)
                 
                 # Reordenar columnas para mejor visualización
-                columnas_orden = ['ROM', 'Ruta ROM'] + [col for col in df.columns if col not in ['ROM', 'Ruta ROM']]
+                columnas_orden = ['ROM', 'Nombre Juego', 'Ruta ROM'] + [col for col in df.columns if col not in ['ROM', 'Nombre Juego', 'Ruta ROM']]
                 df = df[columnas_orden]
                 
                 # Escribir en la hoja del emulador (limitar nombre a 31 caracteres para Excel)
@@ -209,7 +254,10 @@ def comprobar_medios_emulador(emulador_dir: Path):
     print(f"\n🎮 Analizando emulador: {emulador_name}")
     print("-" * 50)
     
-    # 1. Obtener lista de ROMs
+    # 1. Cargar gamelist.xml
+    gamelist_dict = cargar_gamelist(emulador_name)
+    
+    # 2. Obtener lista de ROMs
     roms = obtener_lista_roms(emulador_dir)
     
     if not roms:
@@ -218,21 +266,30 @@ def comprobar_medios_emulador(emulador_dir: Path):
     
     print(f"   Encontradas {len(roms)} ROMs")
     
-    # 2. Verificar medios para cada ROM
+    # 3. Verificar medios para cada ROM
     datos_reporte = []
     total_con_faltantes = 0
+    total_en_gamelist = 0
     
     for i, (nombre_rom, ruta_rom) in enumerate(roms, 1):
         print(f"   [{i}/{len(roms)}] Verificando: {nombre_rom}")
         
+        # Verificar si está en el gamelist
+        nombre_juego = gamelist_dict.get(nombre_rom, "❌ NO EN GAMELIST")
+        if nombre_juego != "❌ NO EN GAMELIST":
+            total_en_gamelist += 1
+        
         faltantes = verificar_medios_faltantes(nombre_rom, emulador_name)
         
-        if faltantes:
-            total_con_faltantes += 1
+        # Agregar siempre si faltan medios O si no está en gamelist
+        if faltantes or nombre_juego == "❌ NO EN GAMELIST":
+            if faltantes:
+                total_con_faltantes += 1
             
             # Preparar fila para el reporte
             fila = {
                 'ROM': nombre_rom,
+                'Nombre Juego': nombre_juego,
                 'Ruta ROM': str(ruta_rom.relative_to(ROMS_BASE_DIR))
             }
             
@@ -240,15 +297,20 @@ def comprobar_medios_emulador(emulador_dir: Path):
             for medio, descripcion in faltantes.items():
                 fila[medio] = '❌ FALTA'
             
+            # Agregar columna de gamelist si no está
+            if nombre_juego == "❌ NO EN GAMELIST":
+                fila['En GameList'] = '❌ NO'
+            
             datos_reporte.append(fila)
     
     print(f"\n   📊 Resumen:")
     print(f"   - Total ROMs analizadas: {len(roms)}")
+    print(f"   - ROMs en gamelist.xml: {total_en_gamelist}")
     print(f"   - ROMs con medios faltantes: {total_con_faltantes}")
     print(f"   - ROMs completas: {len(roms) - total_con_faltantes}")
     
     if not datos_reporte:
-        print("   🎉 ¡Todas las ROMs tienen sus medios completos!")
+        print("   🎉 ¡Todas las ROMs tienen sus medios completos y están en el gamelist!")
     
     return emulador_name, datos_reporte
 
