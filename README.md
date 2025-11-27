@@ -35,7 +35,19 @@ Recorta y comprime videos para reducir su tamaño y duración.
 - Requiere FFmpeg instalado
 - Omite videos que ya existen en el destino para evitar reprocesamiento
 
-### 4. `remove-roms.py`
+### 4. `comprobar-medios-faltantes.py`
+Analiza todas las carpetas de emuladores y genera un reporte de medios faltantes.
+
+**Funcionalidades:**
+- Escanea todas las carpetas de emuladores en la carpeta `roms`
+- Identifica todas las ROMs existentes (múltiples extensiones soportadas)
+- Verifica la existencia de imágenes en: `3dboxes`, `covers`, `marquees`, `miximages`, `screenshots`, `titlescreens`
+- Comprueba la existencia de videos en la carpeta `videos`
+- Genera un archivo Excel por cada emulador con las ROMs que tienen medios faltantes
+- Muestra estadísticas detalladas del análisis
+- Formato de salida claro con indicadores visuales (❌ FALTA)
+
+### 5. `remove-roms.py`
 Elimina ROMs que no tienen imágenes de captura de pantalla correspondientes.
 
 **Funcionalidades:**
@@ -51,8 +63,11 @@ Elimina ROMs que no tienen imágenes de captura de pantalla correspondientes.
 
 ### Dependencias
 ```bash
-pip install Pillow
+pip install Pillow pandas openpyxl
 ```
+- **Pillow**: Requerido para `optimizar-imagenes.py`
+- **pandas**: Requerido para `comprobar-medios-faltantes.py`
+- **openpyxl**: Requerido para `comprobar-medios-faltantes.py` (generación de Excel)
 
 ### Software Externo
 - **FFmpeg** (requerido solo para `recortar-videos.py`)
@@ -98,7 +113,13 @@ python recortar-videos.py
 ```
 Asegúrate de tener FFmpeg instalado y en el PATH.
 
-### 4. Limpiar ROMs sin Medios
+### 4. Comprobar Medios Faltantes
+```bash
+python comprobar-medios-faltantes.py
+```
+Generará un archivo Excel por cada emulador con las ROMs que tienen medios faltantes. Los archivos se nombran con el formato: `{emulador}_medios_faltantes_{timestamp}.xlsx`.
+
+### 5. Limpiar ROMs sin Medios
 ```bash
 python remove-roms.py
 ```
@@ -162,6 +183,11 @@ Edita `ROM_EXTENSIONS` en `remove-roms.py` para añadir o eliminar formatos.
 ### Pillow no encontrado
 ```bash
 pip install Pillow
+```
+
+### pandas o openpyxl no encontrados
+```bash
+pip install pandas openpyxl
 ```
 
 ### FFmpeg no encontrado
