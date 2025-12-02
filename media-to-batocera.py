@@ -1,6 +1,7 @@
 import sys
 import shutil
 import xml.etree.ElementTree as ET
+import xml.dom.minidom as minidom
 from pathlib import Path
 
 # =================================================================
@@ -320,7 +321,11 @@ def procesar_gamelist_xml(gamelist_origen: Path, gamelist_destino: Path, nombre_
             
             # Procesar tag <image>
             image_elem = game.find('image')
-            if image_elem is not None and image_elem.text:
+            if image_elem is None:
+                # Añadir tag <image> si no existe
+                image_elem = ET.SubElement(game, 'image')
+                image_elem.text = f'./images/{game_filename}-image.png'
+            elif image_elem.text:
                 # Transformar: ./media/images/nombre.png -> ./images/nombre-image.png
                 if image_elem.text.startswith('./media/images/'):
                     old_name = Path(image_elem.text).stem
@@ -330,10 +335,18 @@ def procesar_gamelist_xml(gamelist_origen: Path, gamelist_destino: Path, nombre_
                     old_name = Path(image_elem.text).stem
                     if not old_name.endswith('-image'):
                         image_elem.text = f'./images/{old_name}-image.png'
+                else:
+                    # Si tiene otro formato, convertirlo
+                    old_name = Path(image_elem.text).stem
+                    image_elem.text = f'./images/{old_name}-image.png'
             
             # Procesar tag <video>
             video_elem = game.find('video')
-            if video_elem is not None and video_elem.text:
+            if video_elem is None:
+                # Añadir tag <video> si no existe
+                video_elem = ET.SubElement(game, 'video')
+                video_elem.text = f'./videos/{game_filename}-video.mp4'
+            elif video_elem.text:
                 # Transformar: ./media/videos/nombre.mp4 -> ./videos/nombre-video.mp4
                 if video_elem.text.startswith('./media/videos/'):
                     old_name = Path(video_elem.text).stem
@@ -343,6 +356,27 @@ def procesar_gamelist_xml(gamelist_origen: Path, gamelist_destino: Path, nombre_
                     old_name = Path(video_elem.text).stem
                     if not old_name.endswith('-video'):
                         video_elem.text = f'./videos/{old_name}-video.mp4'
+                else:
+                    # Si tiene otro formato, convertirlo
+                    old_name = Path(video_elem.text).stem
+                    video_elem.text = f'./videos/{old_name}-video.mp4'
+            
+            # Procesar tag <marquee>
+            marquee_elem = game.find('marquee')
+            if marquee_elem is None:
+                # Añadir tag <marquee> si no existe
+                marquee_elem = ET.SubElement(game, 'marquee')
+                marquee_elem.text = f'./images/{game_filename}-marquee.png'
+            elif marquee_elem.text:
+                # Asegurar formato correcto para marquee
+                if marquee_elem.text.startswith('./images/'):
+                    old_name = Path(marquee_elem.text).stem
+                    if not old_name.endswith('-marquee'):
+                        marquee_elem.text = f'./images/{old_name}-marquee.png'
+                else:
+                    # Si tiene otro formato, convertirlo
+                    old_name = Path(marquee_elem.text).stem
+                    marquee_elem.text = f'./images/{old_name}-marquee.png'
             
             # Añadir tag <thumbnail> si no existe
             thumbnail_elem = game.find('thumbnail')
@@ -372,13 +406,29 @@ def procesar_gamelist_xml(gamelist_origen: Path, gamelist_destino: Path, nombre_
         # Crear directorio destino si no existe
         gamelist_destino.parent.mkdir(parents=True, exist_ok=True)
         
-        # Escribir el XML modificado manteniendo la declaración y encoding
-        tree.write(
-            gamelist_destino, 
-            encoding='utf-8', 
-            xml_declaration=True,
-            method='xml'
+        # Convertir el XML modificado a string y luego formatearlo con minidom
+        rough_string = ET.tostring(root, encoding='unicode')
+        reparsed = minidom.parseString(rough_string)
+        
+        # Formatear el XML con indentación correcta
+        pretty_xml = reparsed.toprettyxml(
+            indent="\t",  # Usar tabulador como en el ejemplo
+            encoding=None  # No codificar aquí, lo haremos después
         )
+        
+        # Eliminar líneas en blanco extras y mantener el formato limpio
+        lines = pretty_xml.split('\n')
+        cleaned_lines = []
+        for line in lines:
+            if line.strip():  # Solo incluir líneas que no estén vacías
+                cleaned_lines.append(line)
+        
+        # Unir las líneas limpias
+        final_xml = '\n'.join(cleaned_lines)
+        
+        # Escribir el XML formateado al archivo con encoding UTF-8
+        with open(gamelist_destino, 'w', encoding='utf-8') as f:
+            f.write(final_xml)
         
         accion = "sobrescrito" if gamelist_destino.is_file() else "procesado y copiado"
         print(f"   [{accion.upper()}] Exito al {accion}: {nombre_log} ({juegos_procesados} juegos)")
