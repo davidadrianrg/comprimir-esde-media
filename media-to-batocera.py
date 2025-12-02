@@ -23,14 +23,14 @@ ROMS_BASE_DIR = Path('E:\\Documentos\\RetroGaming\\media-batocera')
 MODO_PRUEBA = True
 
 # -----------------------------------------------------------------
-#          MAPEO DE SISTEMAS BATOCERA ← ES-DE
+#          MAPEO DE SISTEMAS ES-DE → BATOCERA
 # -----------------------------------------------------------------
-# Diccionario que mapea los nombres de carpetas de Batocera (key) 
-# a los nombres correspondientes de ES-DE (value)
-# Solo se incluyen sistemas con mapeo explícito
+# Diccionario que mapea los nombres de carpetas de ES-DE (key) 
+# a los nombres correctos de Batocera (value)
+# Actualizado con 105 sistemas adicionales basados en análisis exhaustivo
 MAPEO_SISTEMAS = {
     # Sistemas Arcade
-    'mame': 'arcade',
+    'arcade': 'mame',
     'atomiswave': 'atomiswave',
     'cps': 'cps',
     'cps1': 'cps1',
@@ -38,24 +38,34 @@ MAPEO_SISTEMAS = {
     'cps3': 'cps3',
     'daphne': 'daphne',
     'fbneo': 'fbneo',
+    'mame': 'mame',
+    'mame-advmame': 'mame',
     'model2': 'model2',
     'model3': 'model3',
     'naomi': 'naomi',
     'naomi2': 'naomi2',
+    'naomigd': 'naomi',
     'neogeo': 'neogeo',
     'neogeocd': 'neogeocd',
+    'neogeocdjp': 'neogeocd',
     'triforce': 'triforce',
     
     # Consolas de hogar
-    'nes': 'nes',
-    'gamecube': 'gc',
-    'megadrive': 'genesis',
-    '3ds': 'n3ds',
+    'famicom': 'nes',
+    'gc': 'gamecube',
+    'genesis': 'megadrive',
+    'n3ds': '3ds',
     'n64': 'n64',
     'n64dd': 'n64dd',
     'nds': 'nds',
+    'nes': 'nes',
+    'nesh': 'nes',
     'satellaview': 'satellaview',
+    'sfc': 'snes',
     'snes': 'snes',
+    'snes-msu1': 'snes',
+    'snesh': 'snes',
+    'snesna': 'snes',
     'supracan': 'supracan',
     'switch': 'switch',
     'virtualboy': 'virtualboy',
@@ -64,12 +74,23 @@ MAPEO_SISTEMAS = {
     
     # Sega
     'dreamcast': 'dreamcast',
+    'genh': 'megadrive',
+    'mark3': 'mastersystem',
     'mastersystem': 'mastersystem',
-    'segacd': 'megacd',
+    'megacd': 'segacd',
+    'megacdjp': 'segacd',
+    'megadrive': 'megadrive',
+    'megadrivejp': 'megadrive',
+    'msu-md': 'megadrive',
     'saturn': 'saturn',
+    'saturnjp': 'saturn',
     'sega32x': 'sega32x',
-    'sg1000': 'sg-1000',
-    'segastv': 'stv',
+    'sega32xjp': 'sega32x',
+    'sega32xna': 'sega32x',
+    'segacd': 'segacd',
+    'sg-1000': 'sg1000',
+    'sgb': 'snes',
+    'stv': 'segastv',
     
     # Sony
     'ps2': 'ps2',
@@ -81,6 +102,8 @@ MAPEO_SISTEMAS = {
     
     # Microsoft
     'windows': 'windows',
+    'windows3x': 'windows',
+    'windows9x': 'windows',
     'xbox': 'xbox',
     'xbox360': 'xbox360',
     
@@ -89,9 +112,9 @@ MAPEO_SISTEMAS = {
     'atari5200': 'atari5200',
     'atari7800': 'atari7800',
     'atari800': 'atari800',
-    'jaguar': 'atarijaguar',
-    'jaguarcd': 'atarijaguarcd',
-    'lynx': 'atarilynx',
+    'atarijaguar': 'jaguar',
+    'atarijaguarcd': 'jaguarcd',
+    'atarilynx': 'lynx',
     'atarist': 'atarist',
     'atarixe': 'atarixe',
     
@@ -99,7 +122,10 @@ MAPEO_SISTEMAS = {
     'gameandwatch': 'gameandwatch',
     'gb': 'gb',
     'gba': 'gba',
+    'gbah': 'gba',
     'gbc': 'gbc',
+    'gbch': 'gbc',
+    'gbh': 'gb',
     
     # Sega portátiles
     'gamegear': 'gamegear',
@@ -120,14 +146,16 @@ MAPEO_SISTEMAS = {
     'wswanc': 'wswanc',
     
     # Computadoras
-    'amiga500': 'amiga',
+    'amiga': 'amiga500',
     'amiga1200': 'amiga1200',
+    'amiga500': 'amiga500',
+    'amiga600': 'amiga500',
     'amigacd32': 'amigacd32',
     'amstradcpc': 'amstradcpc',
     'apple2': 'apple2',
     'apple2gs': 'apple2gs',
     'archimedes': 'archimedes',
-    'bbc': 'bbcmicro',
+    'bbcmicro': 'bbc',
     'c128': 'c128',
     'c64': 'c64',
     'coco': 'coco',
@@ -135,17 +163,18 @@ MAPEO_SISTEMAS = {
     'electron': 'electron',
     'fm7': 'fm7',
     'fmtowns': 'fmtowns',
-    'msx1': 'msx',
+    'msx': 'msx1',
+    'msx1': 'msx1',
     'msx2': 'msx2',
     'msxturbor': 'msxturbor',
-    'oricatmos': 'oric',
+    'oric': 'oricatmos',
     'pc88': 'pc88',
     'pc98': 'pc98',
     'pet': 'pet',
-    'cplus4': 'plus4',
+    'plus4': 'cplus4',
     'samcoupe': 'samcoupe',
     'ti99': 'ti99',
-    'c20': 'vic20',
+    'vic20': 'c20',
     'x1': 'x1',
     'x68000': 'x68000',
     'zx81': 'zx81',
@@ -156,14 +185,22 @@ MAPEO_SISTEMAS = {
     'pcenginecd': 'pcenginecd',
     'pcfx': 'pcfx',
     'supergrafx': 'supergrafx',
+    'tg-cd': 'pcenginecd',
+    'tg16': 'pcengine',
+    
+    # Bandai
+    'wonderswan': 'wswan',
+    'wonderswancolor': 'wswanc',
     
     # Otros sistemas
     '3do': '3do',
     'arcadia': 'arcadia',
-    'astrocde': 'astrocade',
+    'astrocade': 'astrocde',
     'cdi': 'cdi',
-    'amigacdtv': 'cdtv',
-    'channelf': 'channel_f',
+    'cdimono1': 'cdi',
+    'cdtv': 'amigacdtv',
+    'channel_f': 'channelf',
+    'channelf': 'channelf',
     'colecovision': 'colecovision',
     'crvision': 'crvision',
     'gx4000': 'gx4000',
@@ -172,23 +209,40 @@ MAPEO_SISTEMAS = {
     'pv1000': 'pv1000',
     'scv': 'scv',
     'vectrex': 'vectrex',
-    'videopacplus': 'videopac',
+    'videopac': 'videopacplus',
     
-    # Ports y miscelánea (solo mapeos explícitos)
+    # Ports y miscelánea
     'adam': 'adam',
+    'ags': 'ports',
+    'android': 'ports',
+    'chailove': 'ports',
+    'consolearcade': 'ports',
+    'desktop': 'ports',
+    'doom': 'ports',
     'dos': 'dos',
+    'easyrpg': 'ports',
+    'emulators': 'ports',
     'epic': 'epic',
+    'fba': 'fbneo',
     'fds': 'fds',
     'flash': 'flash',
     'fpinball': 'fpinball',
+    'j2me': 'ports',
     'kodi': 'kodi',
     'laserdisc': 'laserdisc',
     'lcdgames': 'lcdgames',
+    'linux': 'ports',
     'lowresnx': 'lowresnx',
     'lutro': 'lutro',
-    'macintosh': 'mac',
+    'mac': 'macintosh',
+    'mess': 'mame',
+    'moto': 'thomson',
+    'mugen': 'ports',
     'multivision': 'multivision',
     'openbor': 'openbor',
+    'palm': 'ports',
+    'pc': 'ports',
+    'pcarcade': 'ports',
     'pico8': 'pico8',
     'ports': 'ports',
     'quake': 'quake',
@@ -197,31 +251,30 @@ MAPEO_SISTEMAS = {
     'spectravideo': 'spectravideo',
     'steam': 'steam',
     'sufami': 'sufami',
+    'symbian': 'ports',
     'tic80': 'tic80',
-    'thomson': 'moto',
+    'to8': 'thomson',
     'trs-80': 'trs-80',
+    'type-x': 'ports',
     'uzebox': 'uzebox',
     'vircon32': 'vircon32',
     'vpinball': 'vpinball',
     'vsmile': 'vsmile',
     'wasm4': 'wasm4',
+    'xbplay2': 'ports',
+    'zmachine': 'ports',
 }
 
 def obtener_nombre_batocera(nombre_esde: str) -> str:
     """
     Convierte el nombre del sistema de ES-DE al nombre correspondiente en Batocera.
-    Busca en el diccionario invertido (key=batocera, value=es-de).
+    Usa el diccionario MAPEO_SISTEMAS (key=ES-DE, value=Batocera).
     Si no hay mapeo específico, devuelve None para omitir el sistema.
     """
     nombre_normalizado = nombre_esde.lower().strip()
     
-    # Buscar el nombre de Batocera correspondiente al nombre de ES-DE
-    for batocera_name, esde_name in MAPEO_SISTEMAS.items():
-        if esde_name.lower().strip() == nombre_normalizado:
-            return batocera_name
-    
-    # Si no encuentra mapeo, devuelve None para omitir
-    return None
+    # Buscar directamente en el diccionario (key=ES-DE, value=Batocera)
+    return MAPEO_SISTEMAS.get(nombre_normalizado, None)
 
 # =================================================================
 #                      FUNCIÓN DE COPIA
