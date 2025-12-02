@@ -9,7 +9,10 @@ from pathlib import Path
 # Directorio base de origen (donde están los archivos consolidados de ES-DE)
 MEDIA_BASE_DIR = Path('E:\\Documentos\\RetroGaming\\ES-DE\\ES-DE\\downloaded_media_recortado')
 
-# Directorio base de destino (donde se reconstruirá la estructura original)
+# Directorio base de origen para gamelist.xml
+GAMELISTS_BASE_DIR = Path('E:\\Documentos\\RetroGaming\\ES-DE\\ES-DE\\gamelists')
+
+# Directorio base de destino (donde se reconstruirá la estructura para Batocera)
 ROMS_BASE_DIR = Path('E:\\Documentos\\RetroGaming\\media-batocera')
 
 # -----------------------------------------------------------------
@@ -17,7 +20,7 @@ ROMS_BASE_DIR = Path('E:\\Documentos\\RetroGaming\\media-batocera')
 # -----------------------------------------------------------------
 # Si es True, el script solo mostrará las acciones a realizar sin copiar nada.
 # Si es False, copiará los archivos (sin sobrescribir).
-MODO_PRUEBA = False
+MODO_PRUEBA = True
 
 # -----------------------------------------------------------------
 #          MAPEO DE SISTEMAS ES-DE → BATOCERA
@@ -303,20 +306,24 @@ def copiar_fichero(origen: Path, destino: Path, nombre_log: str):
             return 0
 
 
-def revertir_archivos_multimedia():
-    """Ejecuta la lógica de copia inversa para reconstruir la estructura original."""
+def copiar_archivos_multimedia():
+    """Ejecuta la lógica de copia para construir la estructura de Batocera."""
     
     if MODO_PRUEBA:
         print("MODO DE PRUEBA ACTIVADO. Solo se mostrarán las acciones.")
     else:
-        print("INICIANDO REVERSIÓN DE ARCHIVOS (No se sobrescribirán existentes).")
+        print("INICIANDO COPIA DE ARCHIVOS MULTIMEDIA (No se sobrescribirán existentes).")
     print("-" * 50)
     
     total_copiados = 0
     
-    # Verificar que existe el directorio de origen
+    # Verificar que existen los directorios de origen
     if not MEDIA_BASE_DIR.exists():
         print(f"No se encuentra el directorio de origen: '{MEDIA_BASE_DIR}'")
+        return
+    
+    if not GAMELISTS_BASE_DIR.exists():
+        print(f"No se encuentra el directorio de gamelists: '{GAMELISTS_BASE_DIR}'")
         return
     
     # Buscar carpetas de emuladores dentro de downloaded_media/
@@ -326,16 +333,36 @@ def revertir_archivos_multimedia():
         print(f"No se encontraron carpetas de emuladores dentro de '{MEDIA_BASE_DIR}'")
         return
 
-    # Iterar sobre cada carpeta de emulador (ej: 'emulador1')
+    # Iterar sobre cada carpeta de emulador
     for media_dir in emulador_dirs:
         emulador_name = media_dir.name
         batocera_name = obtener_nombre_batocera(emulador_name)
         
         print(f"\n## Procesando emulador: {emulador_name} -> {batocera_name}...")
         
-        # --- TAREAS DE COPIA INVERSA ---
+        # --- TAREAS DE COPIA DE MULTIMEDIA ---
         
-        # 1. MARQUEES (media/emulador1/marquees/juego1.png -> media-batocera/batocera_name/images/juego1-marquee.png)
+        # 1. SCREENSHOTS -> IMAGES (screenshots/juego1.png -> batocera_name/images/juego1-image.png)
+        screenshots_dir = media_dir / 'screenshots'
+        if screenshots_dir.exists():
+            patron_screenshots = screenshots_dir.glob('*.png')
+            
+            for origen_path in patron_screenshots:
+                game_name = origen_path.stem
+                destino_path = ROMS_BASE_DIR / batocera_name / 'images' / f'{game_name}-image.png'
+                total_copiados += copiar_fichero(origen_path, destino_path, f"{batocera_name}/images/{game_name}-image.png")
+
+        # 2. COVERS -> THUMBS (covers/juego1.png -> batocera_name/images/juego1-thumb.png)
+        covers_dir = media_dir / 'covers'
+        if covers_dir.exists():
+            patron_covers = covers_dir.glob('*.png')
+            
+            for origen_path in patron_covers:
+                game_name = origen_path.stem
+                destino_path = ROMS_BASE_DIR / batocera_name / 'images' / f'{game_name}-thumb.png'
+                total_copiados += copiar_fichero(origen_path, destino_path, f"{batocera_name}/images/{game_name}-thumb.png")
+            
+        # 3. MARQUEES (marquees/juego1.png -> batocera_name/images/juego1-marquee.png)
         marquee_dir = media_dir / 'marquees'
         if marquee_dir.exists():
             patron_marquee = marquee_dir.glob('*.png')
@@ -345,29 +372,28 @@ def revertir_archivos_multimedia():
                 destino_path = ROMS_BASE_DIR / batocera_name / 'images' / f'{game_name}-marquee.png'
                 total_copiados += copiar_fichero(origen_path, destino_path, f"{batocera_name}/images/{game_name}-marquee.png")
 
-        # 2. MIXIMAGES (media/emulador1/miximages/juego1.png -> media-batocera/batocera_name/media/images/juego1.png)
-        miximages_dir = media_dir / 'miximages'
-        if miximages_dir.exists():
-            patron_mix = miximages_dir.glob('*.png')
-            
-            for origen_path in patron_mix:
-                game_name = origen_path.stem
-                destino_path = ROMS_BASE_DIR / batocera_name / 'media' / 'images' / f'{game_name}.png'
-                total_copiados += copiar_fichero(origen_path, destino_path, f"{batocera_name}/media/images/{game_name}.png")
-            
-        # 3. VIDEOS (media/emulador1/videos/juego1.mp4 -> media-batocera/batocera_name/media/video/juego1.mp4)
+        # 4. VIDEOS (videos/juego1.mp4 -> batocera_name/videos/juego1-video.mp4)
         videos_dir = media_dir / 'videos'
         if videos_dir.exists():
             patron_video = videos_dir.glob('*.mp4')
             
             for origen_path in patron_video:
                 game_name = origen_path.stem
-                destino_path = ROMS_BASE_DIR / batocera_name / 'media' / 'video' / f'{game_name}.mp4'
-                total_copiados += copiar_fichero(origen_path, destino_path, f"{batocera_name}/media/video/{game_name}.mp4")
+                destino_path = ROMS_BASE_DIR / batocera_name / 'videos' / f'{game_name}-video.mp4'
+                total_copiados += copiar_fichero(origen_path, destino_path, f"{batocera_name}/videos/{game_name}-video.mp4")
 
-    # 4. Resumen final
+        # 5. GAMELIST.XML (gamelists/emulador/gamelist.xml -> batocera_name/gamelist.xml)
+        gamelist_origen = GAMELISTS_BASE_DIR / emulador_name / 'gamelist.xml'
+        gamelist_destino = ROMS_BASE_DIR / batocera_name / 'gamelist.xml'
+        
+        if gamelist_origen.exists():
+            total_copiados += copiar_fichero(gamelist_origen, gamelist_destino, f"{batocera_name}/gamelist.xml")
+        else:
+            print(f"   [INFO] No existe gamelist.xml para {emulador_name}")
+
+    # Resumen final
     print("\n" + "=" * 50)
-    print("Proceso de reversión finalizado.")
+    print("Proceso de copia finalizado.")
     if MODO_PRUEBA:
          print(f"   Se realizarían {total_copiados} copias.")
          print("   Recuerda cambiar 'MODO_PRUEBA' a False para ejecutar las copias.")
@@ -379,7 +405,7 @@ def revertir_archivos_multimedia():
 #                      PUNTO DE ENTRADA
 # =================================================================
 if __name__ == "__main__":
-    revertir_archivos_multimedia()
+    copiar_archivos_multimedia()
 
     if sys.platform == "win32":
         input("\nPresiona Enter para salir...")
