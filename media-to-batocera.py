@@ -1,5 +1,6 @@
 import sys
 import shutil
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # =================================================================
@@ -21,6 +22,14 @@ ROMS_BASE_DIR = Path('E:\\Documentos\\RetroGaming\\media-batocera')
 # Si es True, el script solo mostrará las acciones a realizar sin copiar nada.
 # Si es False, copiará los archivos (sin sobrescribir).
 MODO_PRUEBA = True
+
+# -----------------------------------------------------------------
+#                   MODO DE SOBRESCRITURA
+# -----------------------------------------------------------------
+# Si es True, sobrescribirá los archivos gamelist.xml existentes en el destino.
+# Si es False, omitirá el procesamiento de gamelist.xml que ya existen.
+# NOTA: Los archivos multimedia (imágenes, videos) NUNCA se sobrescriben.
+SOBRESCRIBIR_EXISTENTES = False
 
 # -----------------------------------------------------------------
 #          MAPEO DE SISTEMAS ES-DE → BATOCERA
@@ -280,24 +289,128 @@ def obtener_nombre_batocera(nombre_esde: str) -> str:
 #                      FUNCIÓN DE COPIA
 # =================================================================
 
+def procesar_gamelist_xml(gamelist_origen: Path, gamelist_destino: Path, nombre_log: str) -> int:
+    """
+    Procesa un gamelist.xml de ES-DE y lo transforma al formato de Batocera.
+    Modifica las rutas de image, video y añade el tag thumbnail.
+    Retorna 1 si se procesó correctamente, 0 si hubo error o se omitió.
+    """
+    
+    # Verificar si el archivo ya existe y no se permite sobreescritura
+    if gamelist_destino.is_file() and not SOBRESCRIBIR_EXISTENTES:
+        print(f"   [INFO] Ya existe: {nombre_log} - Omitiendo procesamiento.")
+        return 0
+    
+    try:
+        # Parsear el XML original
+        tree = ET.parse(gamelist_origen)
+        root = tree.getroot()
+        
+        # Procesar cada tag <game>
+        juegos_procesados = 0
+        for game in root.findall('game'):
+            # Extraer nombre del juego del path para generar nombres de archivo
+            path_elem = game.find('path')
+            if path_elem is not None and path_elem.text:
+                # Obtener nombre base del archivo sin extensión
+                game_filename = Path(path_elem.text).stem
+            else:
+                # Si no hay path, usar un nombre genérico
+                game_filename = f"game_{juegos_procesados}"
+            
+            # Procesar tag <image>
+            image_elem = game.find('image')
+            if image_elem is not None and image_elem.text:
+                # Transformar: ./media/images/nombre.png -> ./images/nombre-image.png
+                if image_elem.text.startswith('./media/images/'):
+                    old_name = Path(image_elem.text).stem
+                    image_elem.text = f'./images/{old_name}-image.png'
+                elif image_elem.text.startswith('./images/'):
+                    # Si ya tiene formato correcto, asegurar el sufijo -image
+                    old_name = Path(image_elem.text).stem
+                    if not old_name.endswith('-image'):
+                        image_elem.text = f'./images/{old_name}-image.png'
+            
+            # Procesar tag <video>
+            video_elem = game.find('video')
+            if video_elem is not None and video_elem.text:
+                # Transformar: ./media/videos/nombre.mp4 -> ./videos/nombre-video.mp4
+                if video_elem.text.startswith('./media/videos/'):
+                    old_name = Path(video_elem.text).stem
+                    video_elem.text = f'./videos/{old_name}-video.mp4'
+                elif video_elem.text.startswith('./videos/'):
+                    # Si ya tiene formato correcto, asegurar el sufijo -video
+                    old_name = Path(video_elem.text).stem
+                    if not old_name.endswith('-video'):
+                        video_elem.text = f'./videos/{old_name}-video.mp4'
+            
+            # Añadir tag <thumbnail> si no existe
+            thumbnail_elem = game.find('thumbnail')
+            if thumbnail_elem is None:
+                # Crear nuevo elemento thumbnail
+                thumbnail_elem = ET.SubElement(game, 'thumbnail')
+                thumbnail_elem.text = f'./images/{game_filename}-thumb.png'
+            elif thumbnail_elem.text:
+                # Si existe, asegurar formato correcto
+                if thumbnail_elem.text.startswith('./images/'):
+                    old_name = Path(thumbnail_elem.text).stem
+                    if not old_name.endswith('-thumb'):
+                        thumbnail_elem.text = f'./images/{old_name}-thumb.png'
+                else:
+                    # Si tiene otro formato, convertirlo
+                    old_name = Path(thumbnail_elem.text).stem
+                    thumbnail_elem.text = f'./images/{old_name}-thumb.png'
+            
+            juegos_procesados += 1
+        
+        # Modo prueba: solo mostrar lo que se haría
+        if MODO_PRUEBA:
+            accion = "sobrescribiría" if gamelist_destino.is_file() else "procesaría y copiaría"
+            print(f"   [PRUEBA] Se {accion}: {nombre_log} ({juegos_procesados} juegos)")
+            return 1
+        
+        # Crear directorio destino si no existe
+        gamelist_destino.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Escribir el XML modificado manteniendo la declaración y encoding
+        tree.write(
+            gamelist_destino, 
+            encoding='utf-8', 
+            xml_declaration=True,
+            method='xml'
+        )
+        
+        accion = "sobrescrito" if gamelist_destino.is_file() else "procesado y copiado"
+        print(f"   [{accion.upper()}] Exito al {accion}: {nombre_log} ({juegos_procesados} juegos)")
+        return 1
+        
+    except ET.ParseError as e:
+        print(f"   [ERROR] Error parseando XML {nombre_log}: {e}")
+        return 0
+    except Exception as e:
+        print(f"   [ERROR] Error procesando {nombre_log}: {e}")
+        return 0
+
+
 def copiar_fichero(origen: Path, destino: Path, nombre_log: str):
     """
-    Copia un archivo de origen a destino si no existe. 
+    Copia un archivo de origen a destino. 
     Maneja el modo de prueba y contabiliza la acción.
+    NOTA: Los archivos multimedia NUNCA se sobrescriben para seguridad.
     """
     
     # 1. Crear el directorio de destino si no existe
     if not MODO_PRUEBA:
         destino.parent.mkdir(parents=True, exist_ok=True)
 
-    # 2. Verificar si el archivo ya existe
+    # 2. Verificar si el archivo ya existe (los multimedia nunca se sobrescriben)
     if destino.is_file():
         print(f"   [INFO] Ya existe: {nombre_log} - Omitiendo copia.")
         return 0 # 0 archivos copiados
 
     # 3. Realizar o simular la copia
     if MODO_PRUEBA:
-        print(f"   [PRUEBA] Se copiaria: {nombre_log}")
+        print(f"   [PRUEBA] Se copiaría: {nombre_log}")
         # Contamos la copia que se realizaría
         return 1 
     else:
@@ -316,7 +429,8 @@ def copiar_archivos_multimedia():
     if MODO_PRUEBA:
         print("MODO DE PRUEBA ACTIVADO. Solo se mostrarán las acciones.")
     else:
-        print("INICIANDO COPIA DE ARCHIVOS MULTIMEDIA (No se sobrescribirán existentes).")
+        modo_sobrescritura = "con sobreescritura" if SOBRESCRIBIR_EXISTENTES else "sin sobrescribir existentes"
+        print(f"INICIANDO COPIA DE ARCHIVOS MULTIMEDIA Y PROCESAMIENTO DE GAMELISTS ({modo_sobrescritura}).")
     print("-" * 50)
     
     total_copiados = 0
@@ -396,7 +510,7 @@ def copiar_archivos_multimedia():
         gamelist_destino = ROMS_BASE_DIR / batocera_name / 'gamelist.xml'
         
         if gamelist_origen.exists():
-            total_copiados += copiar_fichero(gamelist_origen, gamelist_destino, f"{batocera_name}/gamelist.xml")
+            total_copiados += procesar_gamelist_xml(gamelist_origen, gamelist_destino, f"{batocera_name}/gamelist.xml")
         else:
             print(f"   [INFO] No existe gamelist.xml para {emulador_name}")
 
